@@ -77,7 +77,7 @@ export default function App() {
 
   // ── Load from Google Sheets on mount ──
   useEffect(() => {
-    if (SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
+      if (SHEET_URL === "const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLKOrbnqzdWkRy25fvQGzlj9uoHX4IttIrZzmtk2209wmKUbnGC2x1ZW8lCo9c9qdOBw/exec";") {
       setIsLoading(false);
       return;
     }
@@ -96,7 +96,7 @@ export default function App() {
 
   // ── Save to Google Sheets ──
   const saveToSheet = useCallback(async (payload) => {
-    if (SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") return;
+      if (SHEET_URL === "const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLKOrbnqzdWkRy25fvQGzlj9uoHX4IttIrZzmtk2209wmKUbnGC2x1ZW8lCo9c9qdOBw/exec";") return;
     setSyncStatus("syncing");
     try {
       await fetch(SHEET_URL, {
@@ -233,7 +233,7 @@ export default function App() {
       <div style={s.container}>
 
         {/* Setup notice */}
-        {SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE" && (
+              {SHEET_URL === "const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLKOrbnqzdWkRy25fvQGzlj9uoHX4IttIrZzmtk2209wmKUbnGC2x1ZW8lCo9c9qdOBw/exec";" && (
           <div style={s.notSetup}>
             📋 <strong>Google Sheets not connected yet.</strong> Follow the deployment guide to enable cloud sync. Your data is currently stored locally in this session.
           </div>
