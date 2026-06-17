@@ -96,7 +96,7 @@ export default function App() {
 
   // ── Save to Google Sheets (GET-only to avoid CORS/redirect issues) ──
   const saveToSheet = useCallback(async (payload) => {
-    if (SHEET_URL === "https://script.google.com/macros/s/AKfycbziJ95kqahCYKuXUHYj7PkRrb7-8--ubB93RGpQrEYqkH5fIrfD3Tp7FZJ6eZXDVsDMHw/exec") return;
+    if (SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") return;
     setSyncStatus("syncing");
     try {
       const encoded = encodeURIComponent(JSON.stringify(payload));
