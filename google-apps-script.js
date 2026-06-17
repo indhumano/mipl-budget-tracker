@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════
-//  MIPL Budget Tracker — Google Apps Script Backend
-//  Paste this entire file into your Google Apps Script editor
+//  MIPL Budget Tracker — Google Apps Script Backend v2
+//  DELETE the old code and paste this entire file fresh
 // ════════════════════════════════════════════════════════
 
 const SHEET_NAME = "BudgetData";
@@ -15,47 +15,50 @@ function getOrCreateSheet() {
   return sheet;
 }
 
-// GET — load data for a given month
-function doGet(e) {
-  const month = e.parameter.month;
-  const sheet = getOrCreateSheet();
-  const data = sheet.getDataRange().getValues();
-
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === month) {
-      const result = JSON.parse(data[i][1]);
-      return ContentService
-        .createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-  }
-
-  // No data yet for this month — return empty
+function buildResponse(data) {
   return ContentService
-    .createTextOutput(JSON.stringify({}))
+    .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// POST — save data for a given month
-function doPost(e) {
-  const payload = JSON.parse(e.postData.contents);
-  const month = payload.month;
-  const sheet = getOrCreateSheet();
-  const data = sheet.getDataRange().getValues();
+// All requests come as GET to avoid CORS/redirect issues
+// action=get  → load month data
+// action=save → save month data (payload passed as encoded param)
+function doGet(e) {
+  try {
+    const action = e.parameter.action || "get";
+    const month  = e.parameter.month;
 
-  // Check if this month already has a row
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === month) {
-      sheet.getRange(i + 1, 2).setValue(JSON.stringify(payload));
-      return ContentService
-        .createTextOutput(JSON.stringify({ status: "updated" }))
-        .setMimeType(ContentService.MimeType.JSON);
+    if (!month) return buildResponse({ error: "No month provided" });
+
+    const sheet = getOrCreateSheet();
+    const rows  = sheet.getDataRange().getValues();
+
+    if (action === "get") {
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0] === month) {
+          return buildResponse(JSON.parse(rows[i][1]));
+        }
+      }
+      return buildResponse({});  // No data yet for this month
     }
-  }
 
-  // New month — append a row
-  sheet.appendRow([month, JSON.stringify(payload)]);
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: "created" }))
-    .setMimeType(ContentService.MimeType.JSON);
+    if (action === "save") {
+      const payload = JSON.parse(decodeURIComponent(e.parameter.payload));
+
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0] === month) {
+          sheet.getRange(i + 1, 2).setValue(JSON.stringify(payload));
+          return buildResponse({ status: "updated" });
+        }
+      }
+      sheet.appendRow([month, JSON.stringify(payload)]);
+      return buildResponse({ status: "created" });
+    }
+
+    return buildResponse({ error: "Unknown action" });
+
+  } catch (err) {
+    return buildResponse({ error: err.toString() });
+  }
 }

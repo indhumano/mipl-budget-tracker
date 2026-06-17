@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 // ─── PASTE YOUR GOOGLE APPS SCRIPT URL HERE after Step 2 of the guide ───
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLKOrbnqzdWkRy25fvQGzlj9uoHX4IttIrZzmtk2209wmKUbnGC2x1ZW8lCo9c9qdOBw/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbziJ95kqahCYKuXUHYj7PkRrb7-8--ubB93RGpQrEYqkH5fIrfD3Tp7FZJ6eZXDVsDMHw/exec";
 
 const MONTH_KEY = () => {
   const d = new Date();
@@ -77,16 +77,16 @@ export default function App() {
 
   // ── Load from Google Sheets on mount ──
   useEffect(() => {
-      if (SHEET_URL === "const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLKOrbnqzdWkRy25fvQGzlj9uoHX4IttIrZzmtk2209wmKUbnGC2x1ZW8lCo9c9qdOBw/exec";") {
+    if (SHEET_URL === "https://script.google.com/macros/s/AKfycbziJ95kqahCYKuXUHYj7PkRrb7-8--ubB93RGpQrEYqkH5fIrfD3Tp7FZJ6eZXDVsDMHw/exec") {
       setIsLoading(false);
       return;
     }
-    fetch(`${SHEET_URL}?month=${monthKey}`)
+    fetch(`${SHEET_URL}?action=get&month=${monthKey}`)
       .then(r => r.json())
       .then(data => {
-        if (data.income) setIncome(data.income);
-        if (data.expenses) setExpenses(data.expenses);
-        if (data.budgets) setBudgets(data.budgets);
+        if (data.income)     setIncome(data.income);
+        if (data.expenses)   setExpenses(data.expenses);
+        if (data.budgets)    setBudgets(data.budgets);
         if (data.categories) setCategories(data.categories);
         setLastSynced(new Date());
       })
@@ -94,15 +94,13 @@ export default function App() {
       .finally(() => setIsLoading(false));
   }, [monthKey]);
 
-  // ── Save to Google Sheets ──
+  // ── Save to Google Sheets (GET-only to avoid CORS/redirect issues) ──
   const saveToSheet = useCallback(async (payload) => {
-      if (SHEET_URL === "const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLKOrbnqzdWkRy25fvQGzlj9uoHX4IttIrZzmtk2209wmKUbnGC2x1ZW8lCo9c9qdOBw/exec";") return;
+    if (SHEET_URL === "https://script.google.com/macros/s/AKfycbziJ95kqahCYKuXUHYj7PkRrb7-8--ubB93RGpQrEYqkH5fIrfD3Tp7FZJ6eZXDVsDMHw/exec") return;
     setSyncStatus("syncing");
     try {
-      await fetch(SHEET_URL, {
-        method: "POST",
-        body: JSON.stringify({ month: monthKey, ...payload }),
-      });
+      const encoded = encodeURIComponent(JSON.stringify(payload));
+      await fetch(`${SHEET_URL}?action=save&month=${monthKey}&payload=${encoded}`);
       setSyncStatus("saved");
       setLastSynced(new Date());
       setTimeout(() => setSyncStatus("idle"), 2000);
@@ -233,7 +231,7 @@ export default function App() {
       <div style={s.container}>
 
         {/* Setup notice */}
-              {SHEET_URL === "const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLKOrbnqzdWkRy25fvQGzlj9uoHX4IttIrZzmtk2209wmKUbnGC2x1ZW8lCo9c9qdOBw/exec";" && (
+        {SHEET_URL === "https://script.google.com/macros/s/AKfycbziJ95kqahCYKuXUHYj7PkRrb7-8--ubB93RGpQrEYqkH5fIrfD3Tp7FZJ6eZXDVsDMHw/exec" && (
           <div style={s.notSetup}>
             📋 <strong>Google Sheets not connected yet.</strong> Follow the deployment guide to enable cloud sync. Your data is currently stored locally in this session.
           </div>
