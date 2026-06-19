@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
-// ─── PASTE YOUR GOOGLE APPS SCRIPT URL HERE after Step 2 of the guide ───
+// ─── Your Google Apps Script URL ───────────────────────────────────────────
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbziJ95kqahCYKuXUHYj7PkRrb7-8--ubB93RGpQrEYqkH5fIrfD3Tp7FZJ6eZXDVsDMHw/exec";
 
 const MONTH_KEY = () => {
@@ -10,38 +10,37 @@ const MONTH_KEY = () => {
 };
 
 const DEFAULT_CATEGORIES = [
-  { id: "home_loan", name: "Home Loan", color: "#4F6F8F", type: "expense" },
-  { id: "car_loan", name: "Car Loan", color: "#5DADE2", type: "expense" },
-  { id: "personal_loan", name: "Personal Loan", color: "#2E86AB", type: "expense" },
-  { id: "grocery", name: "Grocery", color: "#E07B54", type: "expense" },
-  { id: "petrol", name: "Petrol", color: "#E8B84B", type: "expense" },
-  { id: "course_fee", name: "Course Fee", color: "#A569BD", type: "expense" },
-  { id: "school_fee", name: "School Fee", color: "#B784A7", type: "expense" },
-  { id: "chit", name: "Chit", color: "#F0A500", type: "expense" },
-  { id: "current_bill", name: "Current Bill", color: "#F39C12", type: "expense" },
-  { id: "maid_salary", name: "Maid Salary", color: "#7BAE7F", type: "expense" },
+  { id: "home_loan",       name: "Home Loan",        color: "#4F6F8F", type: "expense" },
+  { id: "car_loan",        name: "Car Loan",          color: "#5DADE2", type: "expense" },
+  { id: "personal_loan",   name: "Personal Loan",     color: "#2E86AB", type: "expense" },
+  { id: "grocery",         name: "Grocery",           color: "#E07B54", type: "expense" },
+  { id: "petrol",          name: "Petrol",            color: "#E8B84B", type: "expense" },
+  { id: "course_fee",      name: "Course Fee",        color: "#A569BD", type: "expense" },
+  { id: "school_fee",      name: "School Fee",        color: "#B784A7", type: "expense" },
+  { id: "chit",            name: "Chit",              color: "#F0A500", type: "expense" },
+  { id: "current_bill",    name: "Current Bill",      color: "#F39C12", type: "expense" },
+  { id: "maid_salary",     name: "Maid Salary",       color: "#7BAE7F", type: "expense" },
   { id: "gifts_donations", name: "Gifts / Donations", color: "#F1948A", type: "expense" },
-  { id: "maintenance", name: "Maintenance", color: "#76D7C4", type: "expense" },
-  { id: "travel", name: "Travel", color: "#1ABC9C", type: "expense" },
-  { id: "food_dining", name: "Food / Dining", color: "#E74C3C", type: "expense" },
-  { id: "medical", name: "Medical", color: "#EC407A", type: "expense" },
-  { id: "entertainment", name: "Entertainment", color: "#8E44AD", type: "expense" },
-  { id: "clothing", name: "Clothing", color: "#D35400", type: "expense" },
-  { id: "emergency_fund", name: "Emergency Fund", color: "#E67E22", type: "expense" },
-  { id: "credit_card", name: "Credit Card", color: "#C0392B", type: "expense" },
-  { id: "savings", name: "Savings", color: "#27AE60", type: "savings" },
-  { id: "other", name: "Other", color: "#95A5A6", type: "expense" },
+  { id: "maintenance",     name: "Maintenance",       color: "#76D7C4", type: "expense" },
+  { id: "travel",          name: "Travel",            color: "#1ABC9C", type: "expense" },
+  { id: "food_dining",     name: "Food / Dining",     color: "#E74C3C", type: "expense" },
+  { id: "medical",         name: "Medical",           color: "#EC407A", type: "expense" },
+  { id: "entertainment",   name: "Entertainment",     color: "#8E44AD", type: "expense" },
+  { id: "clothing",        name: "Clothing",          color: "#D35400", type: "expense" },
+  { id: "emergency_fund",  name: "Emergency Fund",    color: "#E67E22", type: "expense" },
+  { id: "credit_card",     name: "Credit Card",       color: "#C0392B", type: "expense" },
+  { id: "savings",         name: "Savings",           color: "#27AE60", type: "savings" },
+  { id: "other",           name: "Other",             color: "#95A5A6", type: "expense" },
 ];
 
 const INCOME_CATEGORIES = [
-  { id: "salary", name: "Salary" },
-  { id: "freelance", name: "Freelance" },
-  { id: "investments", name: "Investments" },
+  { id: "salary",       name: "Salary" },
+  { id: "freelance",    name: "Freelance" },
+  { id: "investments",  name: "Investments" },
   { id: "other_income", name: "Other Income" },
 ];
 
 const PROTECTED_IDS = DEFAULT_CATEGORIES.map(c => c.id);
-
 const formatINR = (val) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(val || 0);
 
@@ -60,71 +59,71 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 export default function App() {
-  const [income, setIncome] = useState({});
-  const [expenses, setExpenses] = useState({});
-  const [budgets, setBudgets] = useState({});
+  const [income,     setIncome]     = useState({});
+  const [expenses,   setExpenses]   = useState({});
+  const [budgets,    setBudgets]    = useState({});
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab,  setActiveTab]  = useState("dashboard");
   const [newCatName, setNewCatName] = useState("");
   const [newCatType, setNewCatType] = useState("expense");
-  const [syncStatus, setSyncStatus] = useState("idle"); // idle | syncing | saved | error
+  const [syncStatus, setSyncStatus] = useState("loading");
   const [lastSynced, setLastSynced] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const debounceRef = useRef(null);
 
   const monthKey = MONTH_KEY();
   const now = new Date();
   const monthYear = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
-  // ── Load from Google Sheets on mount ──
+  // ── Load on mount ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (SHEET_URL === "https://script.google.com/macros/s/AKfycbziJ95kqahCYKuXUHYj7PkRrb7-8--ubB93RGpQrEYqkH5fIrfD3Tp7FZJ6eZXDVsDMHw/exec") {
-      setIsLoading(false);
-      return;
-    }
+    setSyncStatus("loading");
     fetch(`${SHEET_URL}?action=get&month=${monthKey}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
       .then(data => {
-        if (data.income)     setIncome(data.income);
-        if (data.expenses)   setExpenses(data.expenses);
-        if (data.budgets)    setBudgets(data.budgets);
-        if (data.categories) setCategories(data.categories);
+        if (data && !data.error) {
+          if (data.income)     setIncome(data.income);
+          if (data.expenses)   setExpenses(data.expenses);
+          if (data.budgets)    setBudgets(data.budgets);
+          if (data.categories) setCategories(data.categories);
+        }
+        setSyncStatus("idle");
         setLastSynced(new Date());
       })
-      .catch(() => setSyncStatus("error"))
-      .finally(() => setIsLoading(false));
+      .catch(err => {
+        console.error("Load error:", err);
+        setSyncStatus("error");
+      });
   }, [monthKey]);
 
-  // ── Save to Google Sheets (GET-only to avoid CORS/redirect issues) ──
-  const saveToSheet = useCallback(async (payload) => {
-    if (SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") return;
-    setSyncStatus("syncing");
-    try {
-      const encoded = encodeURIComponent(JSON.stringify(payload));
-      await fetch(`${SHEET_URL}?action=save&month=${monthKey}&payload=${encoded}`);
-      setSyncStatus("saved");
-      setLastSynced(new Date());
-      setTimeout(() => setSyncStatus("idle"), 2000);
-    } catch {
-      setSyncStatus("error");
-    }
+  // ── Debounced save ─────────────────────────────────────────────────────────
+  const saveToSheet = useCallback((payload) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSyncStatus("pending");
+    debounceRef.current = setTimeout(async () => {
+      setSyncStatus("syncing");
+      try {
+        const encoded = encodeURIComponent(JSON.stringify(payload));
+        const url = `${SHEET_URL}?action=save&month=${monthKey}&payload=${encoded}`;
+        const r = await fetch(url);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        setSyncStatus("saved");
+        setLastSynced(new Date());
+        setTimeout(() => setSyncStatus("idle"), 3000);
+      } catch (err) {
+        console.error("Save error:", err);
+        setSyncStatus("error");
+      }
+    }, 800); // wait 800ms after last keystroke before saving
   }, [monthKey]);
 
-  const handleIncomeChange = (id, val) => {
-    const next = { ...income, [id]: val };
-    setIncome(next);
-    saveToSheet({ income: next, expenses, budgets, categories });
-  };
-
-  const handleExpenseChange = (id, val) => {
-    const next = { ...expenses, [id]: val };
-    setExpenses(next);
-    saveToSheet({ income, expenses: next, budgets, categories });
-  };
-
-  const handleBudgetChange = (id, val) => {
-    const next = { ...budgets, [id]: val };
-    setBudgets(next);
-    saveToSheet({ income, expenses, budgets: next, categories });
+  const update = (setter, key, val, allState, field) => {
+    const next = { ...allState, [key]: val };
+    setter(next);
+    const full = { income, expenses, budgets, categories, [field]: next };
+    saveToSheet(full);
   };
 
   const handleAddCategory = () => {
@@ -143,23 +142,41 @@ export default function App() {
     saveToSheet({ income, expenses, budgets, categories: next });
   };
 
-  const totalIncome = useMemo(() => Object.values(income).reduce((s, v) => s + (parseFloat(v) || 0), 0), [income]);
+  const totalIncome   = useMemo(() => Object.values(income).reduce((s, v) => s + (parseFloat(v) || 0), 0), [income]);
   const totalExpenses = useMemo(() => categories.filter(c => c.type === "expense").reduce((s, c) => s + (parseFloat(expenses[c.id]) || 0), 0), [expenses, categories]);
-  const totalSavings = useMemo(() => categories.filter(c => c.type === "savings").reduce((s, c) => s + (parseFloat(expenses[c.id]) || 0), 0), [expenses, categories]);
-  const totalOutflow = totalExpenses + totalSavings;
-  const remaining = totalIncome - totalOutflow;
-  const overBudget = remaining < 0;
-  const savingsRate = totalIncome > 0 ? ((totalSavings / totalIncome) * 100).toFixed(1) : 0;
+  const totalSavings  = useMemo(() => categories.filter(c => c.type === "savings").reduce((s, c) => s + (parseFloat(expenses[c.id]) || 0), 0), [expenses, categories]);
+  const totalOutflow  = totalExpenses + totalSavings;
+  const remaining     = totalIncome - totalOutflow;
+  const overBudget    = remaining < 0;
+  const savingsRate   = totalIncome > 0 ? ((totalSavings / totalIncome) * 100).toFixed(1) : 0;
 
   const pieData = useMemo(() =>
-    categories.map(c => ({ ...c, value: parseFloat(expenses[c.id]) || 0, percent: totalOutflow > 0 ? ((parseFloat(expenses[c.id]) || 0) / totalOutflow * 100).toFixed(1) : 0 })).filter(c => c.value > 0),
+    categories.map(c => ({
+      ...c,
+      value: parseFloat(expenses[c.id]) || 0,
+      percent: totalOutflow > 0 ? ((parseFloat(expenses[c.id]) || 0) / totalOutflow * 100).toFixed(1) : 0
+    })).filter(c => c.value > 0),
     [expenses, categories, totalOutflow]
   );
 
-  const overBudgetCategories = useMemo(() =>
+  const overBudgetCats = useMemo(() =>
     categories.filter(c => budgets[c.id] && (parseFloat(expenses[c.id]) || 0) > parseFloat(budgets[c.id])),
     [categories, expenses, budgets]
   );
+
+  const syncLabel =
+    syncStatus === "loading"  ? "⏳ Loading..."  :
+    syncStatus === "pending"  ? "✎ Typing..."   :
+    syncStatus === "syncing"  ? "↑ Saving..."   :
+    syncStatus === "saved"    ? "✓ Saved"       :
+    syncStatus === "error"    ? "✗ Sync error"  : 
+    lastSynced ? `✓ Synced ${lastSynced.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : "●  Connected";
+
+  const syncColor =
+    syncStatus === "saved"   ? "#27AE60" :
+    syncStatus === "error"   ? "#E07B54" :
+    syncStatus === "syncing" ? "#4FC3F7" :
+    syncStatus === "loading" ? "#E8B84B" : "#7A8FA6";
 
   const s = {
     root: { fontFamily: "'Inter', system-ui, sans-serif", background: "#0F1923", minHeight: "100vh", color: "#E8EDF2", paddingBottom: 40 },
@@ -168,11 +185,8 @@ export default function App() {
     logo: { fontSize: 20, fontWeight: 800, letterSpacing: "-0.5px", color: "#E8EDF2" },
     logoAccent: { color: "#4FC3F7" },
     logoSub: { fontSize: 10, color: "#7A8FA6", letterSpacing: 2, textTransform: "uppercase", marginTop: 2 },
-    syncBadge: { fontSize: 10, padding: "3px 10px", borderRadius: 12, fontWeight: 600,
-      background: syncStatus === "saved" ? "#0B3D2B" : syncStatus === "syncing" ? "#1A2A3F" : syncStatus === "error" ? "#3D1A0B" : "#1A2332",
-      color: syncStatus === "saved" ? "#27AE60" : syncStatus === "syncing" ? "#4FC3F7" : syncStatus === "error" ? "#E07B54" : "#7A8FA6" },
     nav: { display: "flex", gap: 4, marginTop: 14, flexWrap: "wrap" },
-    navBtn: (active) => ({ padding: "6px 14px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 500, background: active ? "#4FC3F7" : "transparent", color: active ? "#0F1923" : "#7A8FA6", transition: "all 0.2s" }),
+    navBtn: (a) => ({ padding: "6px 14px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 500, background: a ? "#4FC3F7" : "transparent", color: a ? "#0F1923" : "#7A8FA6", transition: "all 0.2s" }),
     container: { maxWidth: 900, margin: "0 auto", padding: "20px 16px" },
     summaryGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 },
     card: (accent) => ({ background: "#1A2332", borderRadius: 12, padding: "14px 16px", borderLeft: `3px solid ${accent}` }),
@@ -192,16 +206,13 @@ export default function App() {
     select: { background: "#0F1923", border: "1px solid #2D3F55", borderRadius: 7, padding: "8px 10px", color: "#E8EDF2", fontSize: 12, outline: "none" },
     dot: (color) => ({ width: 9, height: 9, borderRadius: "50%", background: color, flexShrink: 0 }),
     empty: { textAlign: "center", color: "#3D5068", fontSize: 13, padding: "32px 0" },
-    notSetup: { background: "#1A2A1A", border: "1px solid #27AE60", borderRadius: 10, padding: "14px 18px", marginBottom: 20, fontSize: 12, color: "#7BAE7F" },
   };
 
-  const syncLabel = syncStatus === "saved" ? "✓ Saved" : syncStatus === "syncing" ? "↑ Saving..." : syncStatus === "error" ? "✗ Sync error" : lastSynced ? `Last saved ${lastSynced.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : "Not yet synced";
-
-  if (isLoading) return (
+  if (syncStatus === "loading") return (
     <div style={{ ...s.root, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ textAlign: "center", color: "#7A8FA6" }}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-        <div>Loading your budget data...</div>
+        <div style={{ fontSize: 14 }}>Loading your budget data...</div>
       </div>
     </div>
   );
@@ -215,9 +226,7 @@ export default function App() {
             <div style={s.logo}>MIPL <span style={s.logoAccent}>Budget</span> Tracker</div>
             <div style={s.logoSub}>Monthly Family Finance · {monthYear}</div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <span style={s.syncBadge}>{syncLabel}</span>
-          </div>
+          <div style={{ fontSize: 11, color: syncColor, fontWeight: 600, marginTop: 4 }}>{syncLabel}</div>
         </div>
         <div style={s.nav}>
           {["dashboard", "income", "expenses", "categories"].map(tab => (
@@ -229,20 +238,12 @@ export default function App() {
       </div>
 
       <div style={s.container}>
-
-        {/* Setup notice */}
-        {SHEET_URL === "https://script.google.com/macros/s/AKfycbziJ95kqahCYKuXUHYj7PkRrb7-8--ubB93RGpQrEYqkH5fIrfD3Tp7FZJ6eZXDVsDMHw/exec" && (
-          <div style={s.notSetup}>
-            📋 <strong>Google Sheets not connected yet.</strong> Follow the deployment guide to enable cloud sync. Your data is currently stored locally in this session.
-          </div>
-        )}
-
         {/* Warnings */}
-        {(overBudget || overBudgetCategories.length > 0) && (
+        {(overBudget || overBudgetCats.length > 0) && (
           <div style={s.warning}>
             <div style={s.warningTitle}>⚠ Budget Alerts</div>
             {overBudget && <div style={s.warningItem}>Total outflow exceeds income by {formatINR(Math.abs(remaining))}</div>}
-            {overBudgetCategories.map(c => (
+            {overBudgetCats.map(c => (
               <div key={c.id} style={s.warningItem}>
                 {c.name}: spent {formatINR(parseFloat(expenses[c.id]) || 0)}, budgeted {formatINR(parseFloat(budgets[c.id]) || 0)} (+{formatINR((parseFloat(expenses[c.id]) || 0) - parseFloat(budgets[c.id]))})
               </div>
@@ -287,15 +288,14 @@ export default function App() {
                   <div style={s.empty}>Add expenses to see breakdown</div>
                 )}
               </div>
-
               <div>
                 <div style={s.sectionTitle}>Category Summary</div>
                 <div style={{ maxHeight: 280, overflowY: "auto", paddingRight: 4 }}>
                   {categories.map(cat => {
                     const spent = parseFloat(expenses[cat.id]) || 0;
-                    const bud = parseFloat(budgets[cat.id]) || 0;
-                    const pct = bud > 0 ? Math.min((spent / bud) * 100, 100) : 0;
-                    const over = bud > 0 && spent > bud;
+                    const bud   = parseFloat(budgets[cat.id]) || 0;
+                    const pct   = bud > 0 ? Math.min((spent / bud) * 100, 100) : 0;
+                    const over  = bud > 0 && spent > bud;
                     if (spent === 0 && bud === 0) return null;
                     return (
                       <div key={cat.id} style={{ marginBottom: 12 }}>
@@ -336,7 +336,7 @@ export default function App() {
                 <label style={s.label}>{cat.name}</label>
                 <input type="number" min="0" placeholder="₹ 0" style={s.input}
                   value={income[cat.id] || ""}
-                  onChange={e => handleIncomeChange(cat.id, e.target.value)} />
+                  onChange={e => update(setIncome, cat.id, e.target.value, income, "income")} />
               </div>
             ))}
             <div style={{ marginTop: 16, padding: "12px 14px", background: "#1A2332", borderRadius: 10, display: "flex", justifyContent: "space-between" }}>
@@ -353,8 +353,8 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
               {categories.map(cat => {
                 const spent = parseFloat(expenses[cat.id]) || 0;
-                const bud = parseFloat(budgets[cat.id]) || 0;
-                const over = bud > 0 && spent > bud;
+                const bud   = parseFloat(budgets[cat.id]) || 0;
+                const over  = bud > 0 && spent > bud;
                 return (
                   <div key={cat.id} style={{ background: "#1A2332", borderRadius: 10, padding: "14px", borderLeft: `3px solid ${cat.color}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -369,13 +369,13 @@ export default function App() {
                       <input type="number" min="0" placeholder="₹ 0"
                         style={{ ...s.input, borderColor: over ? "#E07B54" : "#2D3F55" }}
                         value={expenses[cat.id] || ""}
-                        onChange={e => handleExpenseChange(cat.id, e.target.value)} />
+                        onChange={e => update(setExpenses, cat.id, e.target.value, expenses, "expenses")} />
                     </div>
                     <div>
                       <div style={s.label}>Budget Limit (optional)</div>
                       <input type="number" min="0" placeholder="₹ 0" style={s.input}
                         value={budgets[cat.id] || ""}
-                        onChange={e => handleBudgetChange(cat.id, e.target.value)} />
+                        onChange={e => update(setBudgets, cat.id, e.target.value, budgets, "budgets")} />
                     </div>
                     {bud > 0 && (
                       <div style={{ marginTop: 8 }}>
